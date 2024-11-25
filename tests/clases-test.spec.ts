@@ -1,65 +1,36 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
+import { SignupPage } from '../pages/SignupPage.page';
+import { ProjectsPage } from '../pages/ProjectPage.page';
 
-class SignupPage {
-  page: any;
-  SignUpButon: any;
-  CompleteNameField: any;
-  EmailField: any;
-  PWDField: any;
-  TermsCheckbox: any;
-  SubmitButon: any;
-
-  constructor(page) {
-    this.page = page;
-    this.SignUpButon = page.locator('.HPHeaderSignup > a');
-    this.CompleteNameField = page.locator('#ctl00_MainContent_SignupControl1_TextBoxFullName');
-    this.EmailField = page.locator('#ctl00_MainContent_SignupControl1_TextBoxEmail');
-    this.PWDField = page.locator('#ctl00_MainContent_SignupControl1_TextBoxPassword');
-    this.TermsCheckbox = page.getByLabel('I have read and agree to the');
-    this.SubmitButon = page.getByRole('button', { name: 'Submit' });
-  }
-
-  async OpenWebpage() {
-    await this.page.goto('https://todo.ly/');
-  }
-
-  async clickOnSignUpFree() {
-    await this.SignUpButon.click();
-  }
-
-  async FillUserData(fullName: string, email: string, password: string) {
-    await this.CompleteNameField.fill(fullName);
-    await this.EmailField.fill(email);
-    await this.PWDField.fill(password);
-  }
-
-  async SaveNewUser() {
-    await this.TermsCheckbox.check();
-    await this.SubmitButon.click();
-  }
-
-  async checkSession() {
-    await this.page.waitForSelector('#MainContentTasks');
-  }
-}
-
-function GenerateRandomData() {
+function generateRandomData() {
   const randomNum = Math.floor(Math.random() * 10000);
-  const fullName = `Usuario${randomNum}`;
+  const name = `Usuario${randomNum}`;
   const email = `usuario${randomNum}@example.com`;
   const password = `Pass${randomNum}!`;
-  return { fullName, email, password };
+  return { name, email, password };
 }
 
-test('Registro de nuevo usuario', async ({ page }) => {
+test.beforeEach(async ({ page }) => {
   const signupPage = new SignupPage(page);
+  const { name, email, password } = generateRandomData();
 
-  const { fullName, email, password } = GenerateRandomData();
+  await signupPage.openPage();
+  await signupPage.clickSignUp();
+  await signupPage.fillUserData(name, email, password);
+  await signupPage.saveUser();
+  await signupPage.verifySession();
+});
 
-  await signupPage.OpenWebpage();
-  await signupPage.clickOnSignUpFree();
-  await signupPage.FillUserData(fullName, email, password);
-  await signupPage.SaveNewUser();
+test('Create 3 items in an empty project with different priorities', async ({ page }) => {
+  const projectsPage = new ProjectsPage(page);
 
-  await signupPage.checkSession();
+  await projectsPage.createProject('Test Projectaso');
+  await projectsPage.createItem('Medium Priority Item MEDIUM');
+  await projectsPage.createItem('Low Priority Item LOW');
+  await projectsPage.createItem('High Priority Item IMPORTANT');
+
+  await projectsPage.setItemPriority(2, 'rgb(255, 51, 0)', '#Div1 > span:nth-child(1)');
+  await projectsPage.setItemPriority(3, 'rgb(22, 139, 184)', '#Div1 > span:nth-child(2)');
+  await projectsPage.setItemPriority(1, 'rgb(81, 153, 45)', '#Div1 > span:nth-child(3)');
+  await projectsPage.sortItemsByPriority();
 });
